@@ -1,0 +1,93 @@
+[
+      {
+    "concept-tagsConf": [
+      "machine learning::69.5774",
+      "artificial intelligence::69.5774",
+      "neural network::69.5774",
+      "deep learning::69.5774",
+      "node::26.3396",
+      "preprint arxiv::21.1125",
+      "bayesian optimization::42.6233",
+      "arxiv preprint arxiv::14.9787",
+      "optimization::44.7283",
+      "opération::19.775",
+      "evaluation::23.0259",
+      "representation::18.4734",
+      "architecture search::20.6111",
+      "algorithm::24.1695",
+      "graph bayesian optimization::23.0709",
+      "neural architecture::30.4452",
+      "acquisition function::17.9744",
+      "surrogate::15.3806",
+      "graph::35.4076",
+      "optimal architecture::17.9744",
+      "search space::15.8343",
+      "architecture::69.5774"
+    ],
+    "cdid": "arxivorg:EAA513B1",
+    "taxnodesConf": [
+      "Industry|Education::1.0",
+      "Technology|Information Technology|Artificial Intelligence|Cognitive Science::1.0",
+      "Technology|Information Technology::1.0",
+      "Technology|Information Technology|Artificial Intelligence|Machine Learning|Neural Networks|Deep Learning::0.685632",
+      "Technology|Information Technology|Artificial Intelligence|Machine Learning|Neural Networks::1.0",
+      "Technology|Information Technology|Artificial Intelligence::1.0",
+      "Technology|Information Technology|Artificial Intelligence|Machine Learning::1.0"
+    ],
+    "modified": "2019-05-14T00:00:00Z",
+    "authorsRaw": [
+      "Ma, Lizheng",
+      "Cui, Jiaxu",
+      "Yang, Bo"
+    ],
+    "title": "Deep Neural Architecture Search with Deep Graph Bayesian Optimization"
+  },
+  {
+    "concept-tagsConf": [
+      "machine learning::110.904",
+      "artificial intelligence::110.904",
+      "educational setting::110.904",
+      "neural network::110.904",
+      "deep learning::110.904",
+      "textual feature::35.2047",
+      "proc::40.2025",
+      "attention distribution::98.9134",
+      "task relevance::50.1421",
+      "global question::35.2047",
+      "dnn attention weight::47.9317",
+      "human attention distribution::59.9797",
+      "participant::52.7537",
+      "stimulus feature::36.0437",
+      "representation::42.2249",
+      "prediction accuracy::41.2221",
+      "attention weight::110.904",
+      "computational linguistics::54.7209",
+      "human attention::75.8254",
+      "dnn model::48.3389",
+      "layout feature::44.864",
+      "fine-tuning::33.5705"
+    ],
+    "cdid": "arxivorg:0447B8AE",
+    "taxnodesConf": [
+      "Genre|Research Report::1.0",
+      "Genre|Research Report|New Finding::1.0",
+      "Genre|Research Report|Experimental Study::1.0",
+      "Industry|Education|Assessment & Standards|Student Performance::1.0",
+      "Industry|Education|Assessment & Standards::1.0",
+      "Industry|Education|Educational Setting::1.0",
+      "Industry|Education::1.0",
+      "Technology|Information Technology|Artificial Intelligence|Machine Learning|Neural Networks|Deep Learning::0.841884",
+      "Technology|Information Technology|Artificial Intelligence|Cognitive Science::1.0",
+      "Technology|Information Technology::1.0",
+      "Technology|Information Technology|Artificial Intelligence|Machine Learning|Neural Networks::1.0",
+      "Technology|Information Technology|Artificial Intelligence::1.0",
+      "Technology|Information Technology|Artificial Intelligence|Machine Learning::1.0"
+    ],
+    "modified": "2021-07-12T00:00:00Z",
+    "authorsRaw": [
+      "Zou, Jiajie",
+      "Ding, Nai"
+    ],
+    "title": "Deep Neural Networks Evolve Human-like Attention Distribution during Reading Comprehension"
+  }
+]
