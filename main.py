@@ -3,10 +3,10 @@ import data
 rawData = data.Data()
 
 print('----------------- Concept Tags -----------------')
-print(rawData.getAllConceptTags())
+print(rawData.getAllTags())
 
 print('\n\n--------------------- cDid ---------------------')
-print(rawData.getAllCdid())
+print(rawData.getAllIds())
 
 print('\n\n------------------ Tax Nodes -------------------')
 print(rawData.getAllTaxNodes())
@@ -19,5 +19,6 @@ print(rawData.getAllAuthorsRaw())
 
 print('\n\n-------------------- Title ---------------------')
 print(rawData.getAllTitle())
-print(rawData.getAllTitle().loc['arxivorg:CBBFE8A2'])
+
+
 
