@@ -23,7 +23,7 @@ class Data:
                  limit=1000,
                  offset=0):
 
-        # TODO: put string filters here
+        # ToDo: put string filters here
 
         self.data = pd.DataFrame(self.pullData(filters, fields, sort, limit, offset))
         self.cdid = self.createCdid()
@@ -34,7 +34,7 @@ class Data:
         self.title = self.createTitle()
 
     # --------------------- Pulling Data ----------------------
-    # TODO: Make filters passed in as array instead of string
+    # ToDo: Make filters passed in as array instead of string
 
     def pullData(self, filters, fields, sort, limit, offset):
         """
@@ -50,7 +50,7 @@ class Data:
         }
 
         response = requests.post('https://aitopics.org/i2kweb/webapi/search', data=data,
-                                 auth=('aitopics-guest', 'HvGSauJ00COgRnGX'))  # TODO: Setup ENV Variables
+                                 auth=('aitopics-guest', 'HvGSauJ00COgRnGX'))  # ToDo: Setup ENV Variables
 
         return response.json()
 
@@ -130,9 +130,9 @@ class Data:
 
     # --------------- Formatting Data Structures ---------------
 
-    def formatValue(self, value):
-        """Removes all characters after '::' in a string"""
-        end = value.find('::')
+    def formatValue(self, value, target='::'):
+        """Removes all characters after the given target in a string"""
+        end = value.find(target)
         return value[0:end]
 
     def makeMultiIndex(self, target, name):
@@ -166,13 +166,20 @@ class Data:
         return index
 
     # ------------------- Accessing Functions ------------------
-    # TODO: make functions to get certain values of data
+    # ToDo: make functions to get certain values of data
 
     def getTagsById(self, id):
         pass
 
-    def getDateById(self, id):
-        pass
+    def getDateById(self, ids):
+        datesList = self.modified
+        dates = []
+        for id in ids.id:
+            date = datesList.loc[datesList.id == id].get('modified').iloc[0]
+            date = self.formatValue(date, target='T')
+            dates.append(date)
+
+        return dates
 
     def getAuthorsById(self, id):
         pass
@@ -180,17 +187,35 @@ class Data:
     def getTitleByID(self, id):
         pass
 
-    ## ------------------------- Plots -------------------------
-    def makeScatterPlotByTag(self, tag):
-        datesList = self.modified
+    # ------------------------- Plots -------------------------
+    def makeScatterPlotByTag(self, tag):  # ToDo: This method is pretty useless
         tagsList = self.conceptTags
 
         result = tagsList.loc[tagsList.tags == tag]
-
-        dates = []
-        for id in result.id:
-            date = datesList.loc[datesList.id == id].get('modified').iloc[0]
-            dates.append(date)
+        dates = self.getDateById(result)
 
         dates = [pd.to_datetime(d) for d in dates]
-        return plt.scatter(dates, result.id, s=10, c='red')
+        datesPlot = plt.scatter(dates, result.id, s=10, c='red')
+        datesPlot.set_xlabel("Date")
+        datesPlot.set_ylabel("ID")
+        return
+
+    def makeLineChart(self, tag):
+        tagsList = self.conceptTags
+
+        result = tagsList.loc[tagsList.tags == tag]
+        dates = self.getDateById(result)
+
+        dates = [pd.to_datetime(d) for d in dates]
+        dates_df = pd.DataFrame(
+            {
+                "date": dates
+            })
+        dates_df = dates_df.groupby(dates_df['date'])
+        print(len(dates_df))
+
+        # ToDo: Add smoothing to the line graph
+        datesPlot = dates_df.value_counts().plot(kind='line', legend=True, figsize=(20, 5))
+        datesPlot.set_xlabel("Date")
+        datesPlot.set_ylabel("Occurrences")
+        return datesPlot
