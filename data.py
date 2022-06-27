@@ -195,12 +195,21 @@ class Data:
         dates = self.getDateById(result)
 
         dates = [pd.to_datetime(d) for d in dates]
-        datesPlot = plt.scatter(dates, result.id, s=10, c='red')
-        datesPlot.set_xlabel("Date")
-        datesPlot.set_ylabel("ID")
-        return
+        dates_df = pd.DataFrame(
+            {
+                "date": dates
+            })
+        dates_df = dates_df.groupby(dates_df['date'])
 
-    def makeLineChart(self, tag):
+        dates_df = dates_df.value_counts()
+        dates_df = dates_df.groupby(pd.Grouper(freq='M')).sum().to_frame('occurrences').reset_index()
+        print(dates_df)
+        datesPlot = dates_df.plot(kind='scatter', x='date', y='occurrences', figsize=(20, 5))
+        datesPlot.set_xlabel("Date")
+        datesPlot.set_ylabel("Occurrences")
+        return datesPlot
+
+    def makeLineChart(self, tag, startDate=None, endDate=None):
         tagsList = self.conceptTags
 
         result = tagsList.loc[tagsList.tags == tag]
@@ -212,10 +221,11 @@ class Data:
                 "date": dates
             })
         dates_df = dates_df.groupby(dates_df['date'])
-        print(len(dates_df))
 
-        # ToDo: Add smoothing to the line graph
-        datesPlot = dates_df.value_counts().plot(kind='line', legend=True, figsize=(20, 5))
+        dates_df = dates_df.value_counts()
+        dates_df = dates_df.groupby(pd.Grouper(freq='M')).sum().to_frame('occurrences').reset_index()
+        print(dates_df)
+        datesPlot = dates_df.plot(x='date', y='occurrences', figsize=(20, 5))
         datesPlot.set_xlabel("Date")
         datesPlot.set_ylabel("Occurrences")
         return datesPlot
