@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import requests
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
 
 
 # ------------------- Key for Data Names --------------------
@@ -168,8 +169,15 @@ class Data:
     # ------------------- Accessing Functions ------------------
     # ToDo: make functions to get certain values of data
 
-    def getTagsById(self, id):
-        pass
+    def getTagsById(self, ids):  # ToDo: Test to see if it works
+        tagsList = self.modified
+        tags = []
+        for id in ids.id:
+            tag = tagsList.loc[tagsList.id == id].get('modified').iloc[0]
+            tag = self.formatValue(tag, target='T')
+            tags.append(tag)
+
+        return tags
 
     def getDateById(self, ids):
         datesList = self.modified
@@ -181,16 +189,31 @@ class Data:
 
         return dates
 
-    def getAuthorsById(self, id):
-        pass
+    def getAuthorsById(self, ids):  # ToDo: Test to see if it works
+        authorsList = self.modified
+        authors = []
+        for id in ids.id:
+            author = authorsList.loc[authorsList.id == id].get('modified').iloc[0]
+            author = self.formatValue(author, target='T')
+            authors.append(author)
 
-    def getTitleByID(self, id):
-        pass
+        return authors
+
+    def getTitleByID(self, ids):  # ToDo: Test to see if it works
+        titlesList = self.modified
+        titles = []
+        for id in ids.id:
+            title = titlesList.loc[titlesList.id == id].get('modified').iloc[0]
+            title = self.formatValue(title, target='T')
+            titles.append(title)
+
+        return titles
 
     # ------------------------- Plots -------------------------
     def makeScatterPlotByTag(self, tag):  # ToDo: This method is pretty useless
         tagsList = self.conceptTags
 
+        # Settings up DataFrame
         result = tagsList.loc[tagsList.tags == tag]
         dates = self.getDateById(result)
 
@@ -203,11 +226,12 @@ class Data:
 
         dates_df = dates_df.value_counts()
         dates_df = dates_df.groupby(pd.Grouper(freq='M')).sum().to_frame('occurrences').reset_index()
-        print(dates_df)
+
+        # Plotting the DataFrame
         datesPlot = dates_df.plot(kind='scatter', x='date', y='occurrences', figsize=(20, 5))
         datesPlot.set_xlabel("Date")
         datesPlot.set_ylabel("Occurrences")
-        return datesPlot
+        return plt
 
     def makeLineChart(self, tag, startDate=None, endDate=None):
         tagsList = self.conceptTags
@@ -225,6 +249,7 @@ class Data:
         dates_df = dates_df.value_counts()
         dates_df = dates_df.groupby(pd.Grouper(freq='M')).sum().to_frame('occurrences').reset_index()
         print(dates_df)
+
         datesPlot = dates_df.plot(x='date', y='occurrences', figsize=(20, 5))
         datesPlot.set_xlabel("Date")
         datesPlot.set_ylabel("Occurrences")
