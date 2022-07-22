@@ -1,8 +1,5 @@
-import numpy as np
 import pandas as pd
 import requests
-import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
 import plotly.express as px
 
 
@@ -90,7 +87,7 @@ class Data:
 
         return filters
 
-    # ---------------- Creates Data Structures ----------------
+    # --------------------------------------------- Creates Data Structures --------------------------------------------
 
     def createConceptTags(self):
         """Creates the Concept Tags Dataset"""
@@ -122,7 +119,7 @@ class Data:
         title = self.makeIndex('title', 'title')
         return title
 
-    # ------------------- Getter Functions --------------------
+    # ------------------------------------------------ Getter Functions ------------------------------------------------
 
     def getAllTags(self):
         """Returns all Concept Tags in Dataset"""
@@ -152,7 +149,7 @@ class Data:
         """Returns the unmodified Dataset"""
         return self.data
 
-    # --------------- Formatting Data Structures ---------------
+    # ------------------------------------------- Formatting Data Structures -------------------------------------------
 
     def formatValue(self, value, target='::'):
         """Removes all characters after the given target in a string"""
@@ -232,26 +229,26 @@ class Data:
 
         return titles
 
-    # ------------------------- Plots -------------------------
-    def makeScatterPlotByTag(self, tag, startDate=None, endDate=None, trend='ols'):  # ToDo: This method is pretty useless
-        dates = self.getChartData(tag, startDate, endDate)
+    # ----------------------------------------------------- Plots ------------------------------------------------------
+    def makeScatterPlotByTag(self, tag, start_date=None, end_date=None, trend='ols'):
+        dates = self.getChartData(tag, start_date, end_date)
 
         figure = px.scatter(dates, x='date', y='occurrences', trendline=trend)
-        figure.update_layout(title=f'{tag} by Date',
+        figure.update_layout(title=f'"{tag.title()}" Occurrences by Mouth',
                              xaxis_title='Article Publish Date',
-                             yaxis_title='Occurrences that Day')
+                             yaxis_title='Occurrences Each Month')
         return figure
 
-    def makeLineChart(self, tag, startDate=None, endDate=None):
-        dates = self.getChartData(tag, startDate, endDate)
+    def makeLineChart(self, tag, start_date=None, end_date=None):
+        dates = self.getChartData(tag, start_date, end_date)
 
         figure = px.line(dates, x='date', y='occurrences')
-        figure.update_layout(title=f'{tag} by Date',
+        figure.update_layout(title=f'"{tag.title()}" Occurrences by Mouth',
                              xaxis_title='Article Publish Date',
-                             yaxis_title='Occurrences that Day')
+                             yaxis_title='Occurrences Each Month')
         return figure
 
-    def getChartData(self, tag, startDate, endDate):
+    def getChartData(self, tag, start_date, end_date):
         tags_list = self.conceptTags
 
         result = tags_list.loc[tags_list.tags == tag]
@@ -264,10 +261,19 @@ class Data:
             })
         dates_df = dates_df.groupby(dates_df['date'])
 
-        if not(startDate is None and endDate is None):
-            pass
-
         dates_df = dates_df.value_counts()
         dates_df = dates_df.groupby(pd.Grouper(freq='M')).sum().to_frame('occurrences').reset_index()
 
-        return dates_df
+        print(dates_df)
+
+        if (start_date is not None) and (end_date is not None): # There is a start & and date
+            return dates_df[(dates_df['date'] > start_date) & (dates_df['date'] < end_date)]
+        elif (start_date is None) and (end_date is not None): # Only an end date
+            return dates_df[dates_df['date'] < end_date]
+        elif (start_date is not None) and (end_date is None): # Only a start date
+            return dates_df[(dates_df['date'] > start_date)]
+        else:
+            return dates_df
+
+    def combinePlots(self, plots):
+        pass
