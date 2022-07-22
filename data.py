@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+import plotly.express as px
 
 
 # ------------------- Key for Data Names --------------------
@@ -22,9 +23,15 @@ class Data:
                  fields='concept-tagsConf,cdid,taxnodesConf,modified,authorsRaw,title',
                  sort='title_sort asc',
                  limit=1000,
-                 offset=0):
+                 offset=0,
+                 ):
 
         # ToDo: put string filters here
+
+        url = filters.find('filters=')
+        if url != -1:
+            filters = filters[url + 8:]
+            filters = filters.replace('%7C', '|')
 
         self.data = pd.DataFrame(self.pullData(filters, fields, sort, limit, offset))
         self.cdid = self.createCdid()
@@ -42,16 +49,22 @@ class Data:
         Pulls data from AI topics Server
         You can change the filters, fields, sort, limit, offset
         """
-        data = {
-            'filters': filters,
-            'fields': fields,
-            'sort': sort,
-            'limit': limit,
-            'offset': offset
+        url = "https://aitopics.org/i2kweb/webapi/search"
+
+        querystring = {
+            "filters": filters,
+            "limit": limit,
+            "sort": sort,
+            "offset": offset
         }
 
-        response = requests.post('https://aitopics.org/i2kweb/webapi/search', data=data,
-                                 auth=('aitopics-guest', 'HvGSauJ00COgRnGX'))  # ToDo: Setup ENV Variables
+        payload = "fields=concept-tagsConf%2Ccdid%2CtaxnodesConf%2Cmodified%2CauthorsRaw%2Ctitle"
+        headers = {
+            'Authorization': "Basic YWl0b3BpY3MtZ3Vlc3Q6SHZHU2F1SjAwQ09nUm5HWA==",
+            'Content-Type': "application/x-www-form-urlencoded"
+        }
+
+        response = requests.request("POST", url, data=payload, headers=headers, params=querystring)
 
         return response.json()
 
@@ -67,6 +80,16 @@ class Data:
         """Takes an array of sort criteria and formates them as a string to pull data"""
         pass
 
+    def url(self, url):
+        filters_index = url.find('filters=') + 8
+        filters = url[filters_index:]
+
+        filters = filters.replace('%7C', '|')
+        filters = filters.replace('%20', ' ')
+        filters = filters.replace('%3A', ':')
+
+        return filters
+
     # ---------------- Creates Data Structures ----------------
 
     def createConceptTags(self):
@@ -81,8 +104,8 @@ class Data:
 
     def createTaxNodes(self):  # ToDo: Make this a hierarchical data structure
         """Creates the Tax Nodes Dataset"""
-        taxNodes = self.makeMultiIndex('taxnodesConf', 'tax-node')
-        return taxNodes
+        tax_nodes = self.makeMultiIndex('taxnodesConf', 'tax-node')
+        return tax_nodes
 
     def createModified(self):
         """Creates the Modified Dataset"""
@@ -200,43 +223,38 @@ class Data:
         return authors
 
     def getTitleByID(self, ids):  # ToDo: Test to see if it works
-        titlesList = self.modified
+        titles_list = self.modified
         titles = []
         for id in ids.id:
-            title = titlesList.loc[titlesList.id == id].get('modified').iloc[0]
+            title = titles_list.loc[titles_list.id == id].get('modified').iloc[0]
             title = self.formatValue(title, target='T')
             titles.append(title)
 
         return titles
 
     # ------------------------- Plots -------------------------
-    def makeScatterPlotByTag(self, tag):  # ToDo: This method is pretty useless
-        tagsList = self.conceptTags
+    def makeScatterPlotByTag(self, tag, startDate=None, endDate=None, trend='ols'):  # ToDo: This method is pretty useless
+        dates = self.getChartData(tag, startDate, endDate)
 
-        # Settings up DataFrame
-        result = tagsList.loc[tagsList.tags == tag]
-        dates = self.getDateById(result)
-
-        dates = [pd.to_datetime(d) for d in dates]
-        dates_df = pd.DataFrame(
-            {
-                "date": dates
-            })
-        dates_df = dates_df.groupby(dates_df['date'])
-
-        dates_df = dates_df.value_counts()
-        dates_df = dates_df.groupby(pd.Grouper(freq='M')).sum().to_frame('occurrences').reset_index()
-
-        # Plotting the DataFrame
-        datesPlot = dates_df.plot(kind='scatter', x='date', y='occurrences', figsize=(20, 5))
-        datesPlot.set_xlabel("Date")
-        datesPlot.set_ylabel("Occurrences")
-        return plt
+        figure = px.scatter(dates, x='date', y='occurrences', trendline=trend)
+        figure.update_layout(title=f'{tag} by Date',
+                             xaxis_title='Article Publish Date',
+                             yaxis_title='Occurrences that Day')
+        return figure
 
     def makeLineChart(self, tag, startDate=None, endDate=None):
-        tagsList = self.conceptTags
+        dates = self.getChartData(tag, startDate, endDate)
 
-        result = tagsList.loc[tagsList.tags == tag]
+        figure = px.line(dates, x='date', y='occurrences')
+        figure.update_layout(title=f'{tag} by Date',
+                             xaxis_title='Article Publish Date',
+                             yaxis_title='Occurrences that Day')
+        return figure
+
+    def getChartData(self, tag, startDate, endDate):
+        tags_list = self.conceptTags
+
+        result = tags_list.loc[tags_list.tags == tag]
         dates = self.getDateById(result)
 
         dates = [pd.to_datetime(d) for d in dates]
@@ -246,11 +264,10 @@ class Data:
             })
         dates_df = dates_df.groupby(dates_df['date'])
 
+        if not(startDate is None and endDate is None):
+            pass
+
         dates_df = dates_df.value_counts()
         dates_df = dates_df.groupby(pd.Grouper(freq='M')).sum().to_frame('occurrences').reset_index()
-        print(dates_df)
 
-        datesPlot = dates_df.plot(x='date', y='occurrences', figsize=(20, 5))
-        datesPlot.set_xlabel("Date")
-        datesPlot.set_ylabel("Occurrences")
-        return datesPlot
+        return dates_df
