@@ -1,6 +1,7 @@
 import pandas as pd
 import requests
 import plotly.express as px
+import urllib.parse as encode
 
 
 # ------------------- Key for Data Names --------------------
@@ -8,84 +9,54 @@ import plotly.express as px
 # calls them and on the left is what I renamed them too (Ex: aitopics = myName)
 #     - cdid = id
 #     - ConceptTags = tags
-#     - TaxNodes = ToDo: get a name for TaxNodes
+#     - TaxNodes = taxNodes
 #     - Authors = authors
 #     - Title = Tile
 
 class Data:
 
     def __init__(self,
-                 filters='taxnodes:Technology|Information Technology|Artificial Intelligence|Cognitive '
-                         'Science@@semantic-units:arXiv.org',
+                 filters=None,  # todo: Figure out why this cannot be None
                  fields='concept-tagsConf,cdid,taxnodesConf,modified,authorsRaw,title',
-                 sort='title_sort asc',
                  limit=1000,
                  offset=0,
+                 url=None
                  ):
 
-        # ToDo: put string filters here
+        # ToDo: Add url encoding
 
-        url = filters.find('filters=')
-        if url != -1:
-            filters = filters[url + 8:]
-            filters = filters.replace('%7C', '|')
+        base_url = "https://aitopics.org/i2kweb/webapi/search"
+        params = {
+            "limit": limit,
+            "offset": offset
+        }
 
-        self.data = pd.DataFrame(self.pullData(filters, fields, sort, limit, offset))
+        payload_data = {
+            "fields": fields,
+            "filters": filters
+        }
+
+        headers = {
+            'Authorization': "Basic YWl0b3BpY3MtZ3Vlc3Q6SHZHU2F1SjAwQ09nUm5HWA==",
+            'Content-Type': "application/x-www-form-urlencoded"
+        }
+
+        if url is None:
+            payload = encode.urlencode(payload_data)
+        else:
+            payload = url.replace('https://aitopics.org/search?', '')
+            payload = payload.replace('fileds', 'fields')
+
+        response = requests.request("POST", base_url, data=payload, headers=headers, params=params)
+        self.data = pd.DataFrame(response.json())
+        print(self.data)
+
         self.cdid = self.createCdid()
         self.conceptTags = self.createConceptTags()
         self.taxNodes = self.createTaxNodes()
         self.modified = self.createModified()
         self.authorsRaw = self.createAuthorsRaw()
         self.title = self.createTitle()
-
-    # --------------------- Pulling Data ----------------------
-    # ToDo: Make filters passed in as array instead of string
-
-    def pullData(self, filters, fields, sort, limit, offset):
-        """
-        Pulls data from AI topics Server
-        You can change the filters, fields, sort, limit, offset
-        """
-        url = "https://aitopics.org/i2kweb/webapi/search"
-
-        querystring = {
-            "filters": filters,
-            "limit": limit,
-            "sort": sort,
-            "offset": offset
-        }
-
-        payload = "fields=concept-tagsConf%2Ccdid%2CtaxnodesConf%2Cmodified%2CauthorsRaw%2Ctitle"
-        headers = {
-            'Authorization': "Basic YWl0b3BpY3MtZ3Vlc3Q6SHZHU2F1SjAwQ09nUm5HWA==",
-            'Content-Type': "application/x-www-form-urlencoded"
-        }
-
-        response = requests.request("POST", url, data=payload, headers=headers, params=querystring)
-
-        return response.json()
-
-    def filtersToString(self, filters):
-        """Takes an array of filters and formats them as a string to pull the data"""
-        pass
-
-    def fieldsToString(self, fields):
-        """Takes an array of field and formats them as a string to pull the data"""
-        pass
-
-    def sortToString(self, items):
-        """Takes an array of sort criteria and formates them as a string to pull data"""
-        pass
-
-    def url(self, url):
-        filters_index = url.find('filters=') + 8
-        filters = url[filters_index:]
-
-        filters = filters.replace('%7C', '|')
-        filters = filters.replace('%20', ' ')
-        filters = filters.replace('%3A', ':')
-
-        return filters
 
     # --------------------------------------------- Creates Data Structures --------------------------------------------
 
@@ -230,28 +201,30 @@ class Data:
         return titles
 
     # ----------------------------------------------------- Plots ------------------------------------------------------
-    def makeScatterPlotByTag(self, tag, start_date=None, end_date=None, trend='ols'):
-        dates = self.getChartData(tag, start_date, end_date)
+    def makeScatterPlotByTag(self, data, target, start_date=None, end_date=None, trend='ols'):
+        dates = self.getChartData(data, target, start_date, end_date)
 
-        figure = px.scatter(dates, x='date', y='occurrences', trendline=trend)
-        figure.update_layout(title=f'"{tag.title()}" Occurrences by Mouth',
+        figure = px.scatter(dates, x='date', y='occurrences', color='target', trendline=trend)
+        figure.update_layout(title=f'"{target.title()}" Occurrences by Mouth',
                              xaxis_title='Article Publish Date',
-                             yaxis_title='Occurrences Each Month')
+                             yaxis_title='Occurrences Each Month',
+                             legend_title='Tags'
+                             )
         return figure
 
-    def makeLineChart(self, tag, start_date=None, end_date=None):
-        dates = self.getChartData(tag, start_date, end_date)
+    def makeLineChart(self, data, target, start_date=None, end_date=None):
+        dates = self.getChartData(data, target, start_date, end_date)
 
-        figure = px.line(dates, x='date', y='occurrences')
-        figure.update_layout(title=f'"{tag.title()}" Occurrences by Mouth',
+        figure = px.line(dates, x='date', y='occurrences', color='target')  # ToDo: Figure out color thing
+        figure.update_layout(title=f'"{target.title()}" Occurrences by Mouth',
                              xaxis_title='Article Publish Date',
-                             yaxis_title='Occurrences Each Month')
+                             yaxis_title='Occurrences Each Month',
+                             legend_title='Tags',
+                             )
         return figure
 
-    def getChartData(self, tag, start_date, end_date):
-        tags_list = self.conceptTags
-
-        result = tags_list.loc[tags_list.tags == tag]
+    def getChartData(self, data, target, start_date, end_date):
+        result = data.loc[data[data.columns[1]] == target]
         dates = self.getDateById(result)
 
         dates = [pd.to_datetime(d) for d in dates]
@@ -262,18 +235,36 @@ class Data:
         dates_df = dates_df.groupby(dates_df['date'])
 
         dates_df = dates_df.value_counts()
-        dates_df = dates_df.groupby(pd.Grouper(freq='M')).sum().to_frame('occurrences').reset_index()
+        dates_df = dates_df.groupby(pd.Grouper(freq='M')).sum().to_frame(
+            'occurrences').reset_index()  # todo: REsample by month or 30 day
 
-        print(dates_df)
+        dates_df['target'] = target  # ToDo: Generalize this
 
-        if (start_date is not None) and (end_date is not None): # There is a start & and date
+        if (start_date is not None) and (end_date is not None):  # There is a start & and date
             return dates_df[(dates_df['date'] > start_date) & (dates_df['date'] < end_date)]
-        elif (start_date is None) and (end_date is not None): # Only an end date
+        elif (start_date is None) and (end_date is not None):  # Only an end date
             return dates_df[dates_df['date'] < end_date]
-        elif (start_date is not None) and (end_date is None): # Only a start date
+        elif (start_date is not None) and (end_date is None):  # Only a start date
             return dates_df[(dates_df['date'] > start_date)]
         else:
             return dates_df
 
-    def combinePlots(self, plots):
-        pass
+    def getTopX(self, data, count):
+        tags_count = data[data.columns[1]].value_counts()
+        top_x = tags_count.nlargest(count).keys()
+
+        return top_x
+
+    def scatterTopX(self, data, count, start_date=None, end_date=None):
+        top_x = self.getTopX(data, count)
+
+        chart_data = []
+        for target in top_x:
+            chart_data.append(self.getChartData(data, target, start_date, end_date))
+
+        top_x_data = pd.concat(chart_data)
+        plot_top_x = px.scatter(top_x_data, x='date', y='occurrences', color='target', trendline='lowess')
+        return plot_top_x
+    
+    # def lineTopX(self, data, count, start_date=None, end_date=None):
+        
