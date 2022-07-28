@@ -12,6 +12,7 @@ import urllib.parse as encode
 #     - TaxNodes = taxNodes
 #     - Authors = authors
 #     - Title = Tile
+#     - Modified = date
 
 class Data:
 
@@ -52,11 +53,11 @@ class Data:
         print(self.data)
 
         self.cdid = self.createCdid()
-        self.conceptTags = self.createConceptTags()
+        self.tags = self.createConceptTags()
         self.taxNodes = self.createTaxNodes()
-        self.modified = self.createModified()
-        self.authorsRaw = self.createAuthorsRaw()
-        self.title = self.createTitle()
+        self.dates = self.createModified()
+        self.authors = self.createAuthorsRaw()
+        self.titles = self.createTitle()
 
     # --------------------------------------------- Creates Data Structures --------------------------------------------
 
@@ -94,7 +95,7 @@ class Data:
 
     def getAllTags(self):
         """Returns all Concept Tags in Dataset"""
-        return self.conceptTags
+        return self.tags
 
     def getAllIds(self):
         """Returns all cdids in Dataset"""
@@ -104,17 +105,17 @@ class Data:
         """Returns all Tax Nodes in Dataset"""
         return self.taxNodes
 
-    def getAllModified(self):
+    def getAllDates(self):
         """Returns all Modified (dates) in Dataset"""
-        return self.modified
+        return self.dates
 
     def getAllAuthorsRaw(self):
         """Returns all Authors in Dataset"""
-        return self.authorsRaw
+        return self.authors
 
     def getAllTitle(self):
         """Returns all Titles in Dataset"""
-        return self.title
+        return self.titles
 
     def getAllData(self):
         """Returns the unmodified Dataset"""
@@ -157,73 +158,41 @@ class Data:
         index = pd.DataFrame(result, columns=['id', name])
         return index
 
-    # ------------------- Accessing Functions ------------------
+    # ---------------------------------------------------- Get by ID ---------------------------------------------------
     # ToDo: make functions to get certain values of data
 
-    def getTagsById(self, ids):  # ToDo: Test to see if it works
-        tagsList = self.modified
-        tags = []
+    def getXByID(self, data, ids):
+        targets = []
         for id in ids.id:
-            tag = tagsList.loc[tagsList.id == id].get('modified').iloc[0]
-            tag = self.formatValue(tag, target='T')
-            tags.append(tag)
+            target = data.loc[data.id == id].get('modified').iloc[0]
+            target = self.formatValue(target, target='T')
+            targets.append(target)
+        return targets
 
-        return tags
+    def getTagsById(self, ids):  # ToDo: Test to see if it works
+        return self.getXByID(self.tags, ids)
 
     def getDateById(self, ids):
-        datesList = self.modified
-        dates = []
-        for id in ids.id:
-            date = datesList.loc[datesList.id == id].get('modified').iloc[0]
-            date = self.formatValue(date, target='T')
-            dates.append(date)
-
-        return dates
+        return self.getXByID(self.dates, ids)
 
     def getAuthorsById(self, ids):  # ToDo: Test to see if it works
-        authorsList = self.modified
-        authors = []
-        for id in ids.id:
-            author = authorsList.loc[authorsList.id == id].get('modified').iloc[0]
-            author = self.formatValue(author, target='T')
-            authors.append(author)
-
-        return authors
+        return self.getXByID(self.authors, ids)
 
     def getTitleByID(self, ids):  # ToDo: Test to see if it works
-        titles_list = self.modified
-        titles = []
-        for id in ids.id:
-            title = titles_list.loc[titles_list.id == id].get('modified').iloc[0]
-            title = self.formatValue(title, target='T')
-            titles.append(title)
-
-        return titles
+        return self.getXByID(self.titles, ids)
 
     # ----------------------------------------------------- Plots ------------------------------------------------------
-    def makeScatterPlotByTag(self, data, target, start_date=None, end_date=None, trend='ols'):
-        dates = self.getChartData(data, target, start_date, end_date)
-
-        figure = px.scatter(dates, x='date', y='occurrences', color='target', trendline=trend)
-        figure.update_layout(title=f'"{target.title()}" Occurrences by Mouth',
-                             xaxis_title='Article Publish Date',
-                             yaxis_title='Occurrences Each Month',
-                             legend_title='Tags'
-                             )
+    def makeScatterPlot(self, data, trend='ols', plot_layout=None):
+        figure = px.scatter(data, x='date', y='occurrences', color='target', trendline=trend)
+        figure.update_layout(plot_layout)
         return figure
 
-    def makeLineChart(self, data, target, start_date=None, end_date=None):
-        dates = self.getChartData(data, target, start_date, end_date)
-
-        figure = px.line(dates, x='date', y='occurrences', color='target')  # ToDo: Figure out color thing
-        figure.update_layout(title=f'"{target.title()}" Occurrences by Mouth',
-                             xaxis_title='Article Publish Date',
-                             yaxis_title='Occurrences Each Month',
-                             legend_title='Tags',
-                             )
+    def makeLineChart(self, data, plot_layout=None):
+        figure = px.line(data, x='date', y='occurrences', color='target')
+        figure.update_layout(plot_layout)
         return figure
 
-    def getChartData(self, data, target, start_date, end_date):
+    def getPlotData(self, data, target, start_date, end_date):
         result = data.loc[data[data.columns[1]] == target]
         dates = self.getDateById(result)
 
@@ -249,22 +218,32 @@ class Data:
         else:
             return dates_df
 
+    def updatePlotLayout(self, plot, layout):
+        plot.update_layout(layout)
+        return layout
+
     def getTopX(self, data, count):
         tags_count = data[data.columns[1]].value_counts()
         top_x = tags_count.nlargest(count).keys()
 
         return top_x
 
-    def scatterTopX(self, data, count, start_date=None, end_date=None):
+    def plotTopX(self, data, count, plot_type=None, start_date=None, end_date=None):
         top_x = self.getTopX(data, count)
 
         chart_data = []
         for target in top_x:
-            chart_data.append(self.getChartData(data, target, start_date, end_date))
-
+            chart_data.append(self.getPlotData(data, target, start_date, end_date))
         top_x_data = pd.concat(chart_data)
-        plot_top_x = px.scatter(top_x_data, x='date', y='occurrences', color='target', trendline='lowess')
+
+        match plot_type:
+            case 'line':
+                plot_top_x = self.makeLineChart(top_x_data)
+            case 'scatter':
+                plot_top_x = self.makeScatterPlot(top_x_data)
+            case _:
+                plot_top_x = self.makeLineChart(top_x_data)
+
         return plot_top_x
-    
+
     # def lineTopX(self, data, count, start_date=None, end_date=None):
-        

@@ -45,7 +45,7 @@ match test_type:
                         case _:
                             trend = None
 
-                    plot = rawData.makeScatterPlotByTag(target, trend=trend)
+                    plot = rawData.makeScatterPlot(target, trend=trend)
 
                 case '2':
                     plot = rawData.makeLineChart(target, start_date='01/01/2020', end_date='01/01/2022')
@@ -60,7 +60,7 @@ match test_type:
         start_date = '01/01/2019'
         end_date = None
 
-        rawData.scatterTopX(data, count, start_date=start_date, end_date=end_date).show()
+        rawData.plotTopX(data, count, start_date=start_date, end_date=end_date).show()
 
         # chart_data = []
         # for target in top_x:
