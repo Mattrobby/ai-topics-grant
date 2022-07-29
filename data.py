@@ -2,9 +2,10 @@ import pandas as pd
 import requests
 import plotly.express as px
 import urllib.parse as encode
+import os
 
 
-# ------------------- Key for Data Names --------------------
+# ------------------------------------------------- Key for Data Names -------------------------------------------------
 # This is what I renamed the values pulled from https://aitopics.org. On the left is what aitopics
 # calls them and on the left is what I renamed them too (Ex: aitopics = myName)
 #     - cdid = id
@@ -13,6 +14,10 @@ import urllib.parse as encode
 #     - Authors = authors
 #     - Title = Tile
 #     - Modified = date
+
+AUTHORIZATION = os.environ['AUTHORIZATION']
+CONTENT_TYPE = os.environ['CONTENT_TYPE']
+
 
 class Data:
 
@@ -38,8 +43,8 @@ class Data:
         }
 
         headers = {
-            'Authorization': "Basic YWl0b3BpY3MtZ3Vlc3Q6SHZHU2F1SjAwQ09nUm5HWA==",
-            'Content-Type': "application/x-www-form-urlencoded"
+            'Authorization': AUTHORIZATION,
+            'Content-Type': CONTENT_TYPE
         }
 
         if url is None:
@@ -183,8 +188,9 @@ class Data:
 
     # ----------------------------------------------------- Plots ------------------------------------------------------
     @staticmethod
-    def makeScatterPlot(data, trend='ols', plot_layout=None):
-        figure = px.scatter(data, x='date', y='occurrences', color='target', trendline=trend)
+    def makeScatterPlot(data, trend='ols', trend_options=None, plot_layout=None):
+        figure = px.scatter(data, x='date', y='occurrences', color='target',
+                            trendline=trend, trendline_options=trend_options)
         figure.update_layout(plot_layout)
         return figure
 
@@ -253,8 +259,8 @@ class Data:
 
         return top_x
 
-    def plotTopX(self, data, count, plot_layout=None, scatter_trend='lowess', plot_type='line', start_date=None,
-                 end_date=None):
+    def plotTopX(self, data, count, plot_type, plot_layout=None, trend='lowess', trend_options=None,
+                 start_date=None, end_date=None):
         global plot_top_x
         top_x = self.getTopX(data, count)
 
@@ -275,10 +281,11 @@ class Data:
             case 'line':
                 plot_top_x = self.makeLineChart(top_x_data, plot_layout=plot_layout)
             case 'scatter':
-                plot_top_x = self.makeScatterPlot(top_x_data, plot_layout=plot_layout, trend=scatter_trend)
+                plot_top_x = self.makeScatterPlot(top_x_data, plot_layout=plot_layout,
+                                                  trend=trend, trend_options=trend_options)
             case 'radar':
                 plot_top_x = self.makeRadarChart(top_x_data, plot_layout=plot_layout)
+            case _:
+                pass
 
         return plot_top_x
-
-    # def lineTopX(self, data, count, start_date=None, end_date=None):
