@@ -4,10 +4,10 @@ import plotly.express as px  # ToDo: remove this later
 
 rawData = data.Data(filters='taxnodes:Technology|Information Technology|Artificial Intelligence|Assistive Technologies')
 
-test_type = 2
+test_type = 3
 
 match test_type:
-    case 1:
+    case 1: # plotting line and scatter plots
         while True:
             plot_type = input('==> Do you want a Scatter Plot (1), Line Graph (2), or to quit (q)? ')
             if plot_type.lower() == 'q':
@@ -54,7 +54,7 @@ match test_type:
 
             plot.show()
 
-    case 2:
+    case 2: # Ploting top x values
         data = rawData.getAllTags()
         count = 10
         start_date = '01/01/2019'
@@ -70,3 +70,5 @@ match test_type:
         # plot_top_x = px.scatter(top_x_data, x='date', y='occurrences', color='target', trendline='lowess')
         # plot_top_x.show()
 
+    case 3: # Plotting Radar Chart
+        rawData.plotTopX(rawData.getAllTaxNodes(), 5, plot_type='radar').show()

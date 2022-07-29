@@ -45,12 +45,10 @@ class Data:
         if url is None:
             payload = encode.urlencode(payload_data)
         else:
-            payload = url.replace('https://aitopics.org/search?', '')
-            payload = payload.replace('fileds', 'fields')
+            payload = "fields=" + encode.quote(fields) + '&' + url.replace('https://aitopics.org/search?', '')
 
         response = requests.request("POST", base_url, data=payload, headers=headers, params=params)
         self.data = pd.DataFrame(response.json())
-        print(self.data)
 
         self.cdid = self.createCdid()
         self.tags = self.createConceptTags()
@@ -123,7 +121,8 @@ class Data:
 
     # ------------------------------------------- Formatting Data Structures -------------------------------------------
 
-    def formatValue(self, value, target='::'):
+    @staticmethod
+    def formatValue(value, target='::'):
         """Removes all characters after the given target in a string"""
         end = value.find(target)
         return value[0:end]
@@ -162,9 +161,10 @@ class Data:
     # ToDo: make functions to get certain values of data
 
     def getXByID(self, data, ids):
+        """Searches a set of data for the ID"""
         targets = []
-        for id in ids.id:
-            target = data.loc[data.id == id].get('modified').iloc[0]
+        for item in ids.id:
+            target = data.loc[data.id == item].get('modified').iloc[0]
             target = self.formatValue(target, target='T')
             targets.append(target)
         return targets
@@ -182,17 +182,28 @@ class Data:
         return self.getXByID(self.titles, ids)
 
     # ----------------------------------------------------- Plots ------------------------------------------------------
-    def makeScatterPlot(self, data, trend='ols', plot_layout=None):
+    @staticmethod
+    def makeScatterPlot(data, trend='ols', plot_layout=None):
         figure = px.scatter(data, x='date', y='occurrences', color='target', trendline=trend)
         figure.update_layout(plot_layout)
         return figure
 
-    def makeLineChart(self, data, plot_layout=None):
+    @staticmethod
+    def makeLineChart(data, plot_layout=None):
         figure = px.line(data, x='date', y='occurrences', color='target')
         figure.update_layout(plot_layout)
+
         return figure
 
-    def getPlotData(self, data, target, start_date, end_date):
+    @staticmethod
+    def makeRadarChart(data, plot_layout=None):
+        figure = px.line_polar(data, r='occurrences', theta='target', line_close=True)
+        figure.update_traces(fill='toself')
+        figure.update_layout(plot_layout)
+
+        return figure
+
+    def getPlotDataByDate(self, data, target, start_date=None, end_date=None):
         result = data.loc[data[data.columns[1]] == target]
         dates = self.getDateById(result)
 
@@ -218,31 +229,55 @@ class Data:
         else:
             return dates_df
 
-    def updatePlotLayout(self, plot, layout):
+    def getPlotDataByOccurrences(self, data, target, start_date=None, end_date=None):
+        plot_data = self.getPlotDataByDate(data, target, start_date=start_date, end_date=end_date)
+        occurrences = plot_data['occurrences'].sum()
+
+        df = pd.DataFrame({
+            'target': [target],
+            'occurrences': [occurrences]
+        })
+
+        return df
+
+    @staticmethod
+    def updatePlotLayout(plot, layout):
         plot.update_layout(layout)
+
         return layout
 
-    def getTopX(self, data, count):
+    @staticmethod
+    def getTopX(data, count):
         tags_count = data[data.columns[1]].value_counts()
         top_x = tags_count.nlargest(count).keys()
 
         return top_x
 
-    def plotTopX(self, data, count, plot_type=None, start_date=None, end_date=None):
+    def plotTopX(self, data, count, plot_layout=None, scatter_trend='lowess', plot_type='line', start_date=None,
+                 end_date=None):
+        global plot_top_x
         top_x = self.getTopX(data, count)
 
-        chart_data = []
-        for target in top_x:
-            chart_data.append(self.getPlotData(data, target, start_date, end_date))
-        top_x_data = pd.concat(chart_data)
+        match plot_type:
+            case 'radar':
+                chart_data = []
+                for target in top_x:
+                    chart_data.append(
+                        self.getPlotDataByOccurrences(data, target, start_date=start_date, end_date=end_date))
+                top_x_data = pd.concat(chart_data).reset_index(drop=True)
+            case _:
+                chart_data = []
+                for target in top_x:
+                    chart_data.append(self.getPlotDataByDate(data, target, start_date=start_date, end_date=end_date))
+                top_x_data = pd.concat(chart_data)
 
         match plot_type:
             case 'line':
-                plot_top_x = self.makeLineChart(top_x_data)
+                plot_top_x = self.makeLineChart(top_x_data, plot_layout=plot_layout)
             case 'scatter':
-                plot_top_x = self.makeScatterPlot(top_x_data)
-            case _:
-                plot_top_x = self.makeLineChart(top_x_data)
+                plot_top_x = self.makeScatterPlot(top_x_data, plot_layout=plot_layout, trend=scatter_trend)
+            case 'radar':
+                plot_top_x = self.makeRadarChart(top_x_data, plot_layout=plot_layout)
 
         return plot_top_x
 
