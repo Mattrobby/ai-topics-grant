@@ -305,7 +305,6 @@ class Data:
     @staticmethod
     def getTrendLineData(plot):
         """Takes a plot and returns the trend line data"""
-        global trend_line_data
         data = plot.to_dict().get('data')
 
         trend_line_data = []
@@ -322,21 +321,40 @@ class Data:
 
         return trend_line_data
 
-
     def minMaxScaled(self, plot):
         """Takes in a plot and applies min max scaling to the trend"""
 
-        # Math: (value - MIN) / (MAX - MIN)
+        data = self.getTrendLineData(plot)
+
+        answer = []
+        for series in data:
+            result = (series - series.min()) / (series.max() - series.min())
+            answer.append(result)
+
+        return answer
+
+    def zScore(self, plot):
+        """Takes in a plot and applies Z Score to the trend"""
 
         data = self.getTrendLineData(plot)
 
+        answer = []
         for series in data:
-            result = (series - series.min()) / (series.max - series.min())
-            print(result)
+            result = (series - series.mean()) / series.std()
+            answer.append(result)
 
-
-    def zScore(self, plot):
-        pass
+        return answer
 
     def maxScaled(self, plot):
+        """Takes in a plot and applies max scaling to the trend"""
+
+        data = self.getTrendLineData(plot)
+
+        answer = []
+        for series in data:
+            result = series / series.abs().max()
+            answer.append(result)
+
+        return answer
+
         pass

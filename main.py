@@ -73,8 +73,9 @@ match test_type:
         plot = rawData.plotTopX(data, count, 'scatter', trend_options=trend_options,
                          start_date=start_date, end_date=end_date)
         # plot.show()
-
-        rawData.minMaxScaled(plot)
+        print(rawData.getTrendLineData(plot)[0])
+        print('-------------------------------------------------------------------------------------------------------')
+        print(rawData.minMaxScaled(plot)[0])
 
     case 3:  # Plotting Radar Chart
         rawData.plotTopX(rawData.getAllTaxNodes(), 5, plot_type='radar').show()
