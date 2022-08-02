@@ -214,6 +214,15 @@ class Data:
 
         return figure
 
+    @staticmethod
+    def makeBarChart(data, plot_layout=None):
+        figure = px.bar(data)
+        figure.update_layout(plot_layout)
+
+        return figure
+
+    # ---------------------------------------------- Plot Helper Functions ---------------------------------------------
+
     def getPlotDataByDate(self, data, target, start_date=None, end_date=None):
         result = data.loc[data[data.columns[1]] == target]
         dates = self.getDateById(result)
@@ -300,6 +309,14 @@ class Data:
 
         return plot_top_x
 
+    def weeksTrendingTags(self):
+        start = end_date = datetime.today() - timedelta(7)
+        end = datetime.today()
+
+        plot = self.plotTopX(self.tags, 5, 'scatter', start_date=start, end_date=end)
+
+        return plot
+
     # --------------------------------------------- Trend Line Calculations --------------------------------------------
 
     @staticmethod
@@ -319,7 +336,7 @@ class Data:
 
                 trend_line_data.append(series)
 
-        return trend_line_data
+        return pd.concat(trend_line_data, axis=1)
 
     def minMaxScaled(self, plot):
         """Takes in a plot and applies min max scaling to the trend"""
@@ -327,11 +344,11 @@ class Data:
         data = self.getTrendLineData(plot)
 
         answer = []
-        for series in data:
-            result = (series - series.min()) / (series.max() - series.min())
+        for column in data.columns:
+            result = (data[column] - data[column].min()) / (data[column].max() - data[column].min())
             answer.append(result)
 
-        return answer
+        return pd.concat(answer, axis=1)
 
     def zScore(self, plot):
         """Takes in a plot and applies Z Score to the trend"""
@@ -339,11 +356,11 @@ class Data:
         data = self.getTrendLineData(plot)
 
         answer = []
-        for series in data:
-            result = (series - series.mean()) / series.std()
+        for column in data:
+            result = (data - data[column].mean()) / data[column].std()
             answer.append(result)
 
-        return answer
+        return pd.concat(answer, axis=1)
 
     def maxScaled(self, plot):
         """Takes in a plot and applies max scaling to the trend"""
@@ -351,10 +368,10 @@ class Data:
         data = self.getTrendLineData(plot)
 
         answer = []
-        for series in data:
-            result = series / series.abs().max()
+        for column in data:
+            result = data[column] / data[column].abs().max()
             answer.append(result)
 
-        return answer
+        return pd.concat(answer, axis=1)
 
-        pass
+

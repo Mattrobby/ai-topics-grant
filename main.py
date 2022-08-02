@@ -3,9 +3,16 @@ import pandas as pd  # ToDo: remove this later
 import plotly.express as px  # ToDo: remove this later
 import json
 
-rawData = data.Data(filters='taxnodes:Technology|Information Technology|Artificial Intelligence|Assistive Technologies')
+test_type = int(input("""==> What mode do you want to enter?
+    1. Line & Scatter Plot Picker (Deprecated)
+    2. Plotting the Top x Values
+    3. Radar Chart Plotter
+    4. Scaling
+    5. Top Trending Tags
+==> """))
 
-test_type = 2
+rawData = data.Data(
+        filters='taxnodes:Technology|Information Technology|Artificial Intelligence|Assistive Technologies')
 
 match test_type:
     case 1:  # plotting line and scatter plots
@@ -64,6 +71,24 @@ match test_type:
         data = rawData.getAllTags()
         count = 10
         start_date = '01/01/2019'
+
+        end_date = None
+
+        trend_options = dict(
+            frac=0.1,
+        )
+
+        plot = rawData.plotTopX(data, count, 'scatter', trend_options=None,
+                         start_date=start_date, end_date=end_date)
+        plot.show()
+
+    case 3:  # Plotting Radar Chart
+        rawData.plotTopX(rawData.getAllTaxNodes(), 5, plot_type='radar').show()
+
+    case 4:  # Scaling
+        data = rawData.getAllTags()
+        count = 10
+        start_date = '01/01/2019'
         end_date = None
 
         trend_options = dict(
@@ -71,11 +96,28 @@ match test_type:
         )
 
         plot = rawData.plotTopX(data, count, 'scatter', trend_options=trend_options,
-                         start_date=start_date, end_date=end_date)
-        # plot.show()
-        print(rawData.getTrendLineData(plot)[0])
-        print('-------------------------------------------------------------------------------------------------------')
-        print(rawData.minMaxScaled(plot)[0])
+                                start_date=start_date, end_date=end_date)
 
-    case 3:  # Plotting Radar Chart
-        rawData.plotTopX(rawData.getAllTaxNodes(), 5, plot_type='radar').show()
+        trend_line_data = rawData.getTrendLineData(plot)
+        min_max = rawData.minMaxScaled(plot)
+        max_scaled = rawData.maxScaled(plot)
+        z_score = rawData.zScore(plot)
+
+        print(trend_line_data)
+        print('-------------------------------------------------------------------------------------------------------')
+        print(min_max)
+        print('-------------------------------------------------------------------------------------------------------')
+        print(max_scaled)
+        print('-------------------------------------------------------------------------------------------------------')
+        print(z_score)
+
+        bar_options = {
+            'barmode': 'group'
+        }
+
+        plot = rawData.makeBarChart(min_max, plot_layout=bar_options)
+        plot.show()
+
+    case 5:  # top trending
+        plot = rawData.weeksTrendingTags()
+        plot.show()
