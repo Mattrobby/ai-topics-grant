@@ -3,17 +3,17 @@ import requests
 import plotly.express as px
 import urllib.parse as encode
 import os
-
+from datetime import datetime, timedelta
 
 # ------------------------------------------------- Key for Data Names -------------------------------------------------
 # This is what I renamed the values pulled from https://aitopics.org. On the left is what aitopics
 # calls them and on the left is what I renamed them too (Ex: aitopics = myName)
-#     - cdid = id
-#     - ConceptTags = tags
-#     - TaxNodes = taxNodes
-#     - Authors = authors
-#     - Title = Tile
-#     - Modified = date
+#   - cdid = id
+#   - ConceptTags = tags
+#   - TaxNodes = taxNodes
+#   - Authors = authors
+#   - Title = title
+#   - Modified = date
 
 AUTHORIZATION = os.environ['AUTHORIZATION']
 CONTENT_TYPE = os.environ['CONTENT_TYPE']
@@ -23,7 +23,7 @@ class Data:
 
     def __init__(self,
                  filters=None,  # todo: Figure out why this cannot be None
-                 fields='concept-tagsConf,cdid,taxnodesConf,modified,authorsRaw,title',
+                 fields='concept-tagsConf,cdid,taxnodesConf,modified,title,authorsRaw',
                  limit=1000,
                  offset=0,
                  url=None
@@ -49,6 +49,7 @@ class Data:
 
         if url is None:
             payload = encode.urlencode(payload_data)
+
         else:
             payload = "fields=" + encode.quote(fields) + '&' + url.replace('https://aitopics.org/search?', '')
 
@@ -59,8 +60,12 @@ class Data:
         self.tags = self.createConceptTags()
         self.taxNodes = self.createTaxNodes()
         self.dates = self.createModified()
-        self.authors = self.createAuthorsRaw()
         self.titles = self.createTitle()
+
+        try:
+            self.authors = self.createAuthorsRaw()
+        except:
+            self.authors = None
 
     # --------------------------------------------- Creates Data Structures --------------------------------------------
 
@@ -188,7 +193,7 @@ class Data:
 
     # ----------------------------------------------------- Plots ------------------------------------------------------
     @staticmethod
-    def makeScatterPlot(data, trend='ols', trend_options=None, plot_layout=None):
+    def makeScatterPlot(data, trend='lowess', trend_options=None, plot_layout=None):
         figure = px.scatter(data, x='date', y='occurrences', color='target',
                             trendline=trend, trendline_options=trend_options)
         figure.update_layout(plot_layout)
@@ -222,9 +227,12 @@ class Data:
 
         dates_df = dates_df.value_counts()
         dates_df = dates_df.groupby(pd.Grouper(freq='M')).sum().to_frame(
-            'occurrences').reset_index()  # todo: REsample by month or 30 day
+            'occurrences').reset_index()
 
-        dates_df['target'] = target  # ToDo: Generalize this
+        dates_df['target'] = target
+
+        if end_date is None:  # ToDo: Do the better way to subtract datetime
+            end_date = datetime.today() - timedelta(30)
 
         if (start_date is not None) and (end_date is not None):  # There is a start & and date
             return dates_df[(dates_df['date'] > start_date) & (dates_df['date'] < end_date)]
@@ -236,15 +244,17 @@ class Data:
             return dates_df
 
     def getPlotDataByOccurrences(self, data, target, start_date=None, end_date=None):
+        """Takes a dataset and returns data sorted by the given target and the number of occurrences that target has
+        in the """
         plot_data = self.getPlotDataByDate(data, target, start_date=start_date, end_date=end_date)
         occurrences = plot_data['occurrences'].sum()
 
-        df = pd.DataFrame({
+        result = pd.DataFrame({
             'target': [target],
             'occurrences': [occurrences]
         })
 
-        return df
+        return result
 
     @staticmethod
     def updatePlotLayout(plot, layout):
@@ -289,3 +299,44 @@ class Data:
                 pass
 
         return plot_top_x
+
+    # --------------------------------------------- Trend Line Calculations --------------------------------------------
+
+    @staticmethod
+    def getTrendLineData(plot):
+        """Takes a plot and returns the trend line data"""
+        global trend_line_data
+        data = plot.to_dict().get('data')
+
+        trend_line_data = []
+        for item in data:
+            title = item.get('hovertemplate')
+
+            if 'trendline' in title:
+                name = item.get('name')
+                line = item.get('y')
+
+                series = pd.Series(line, name=name)
+
+                trend_line_data.append(series)
+
+        return trend_line_data
+
+
+    def minMaxScaled(self, plot):
+        """Takes in a plot and applies min max scaling to the trend"""
+
+        # Math: (value - MIN) / (MAX - MIN)
+
+        data = self.getTrendLineData(plot)
+
+        for series in data:
+            result = (series - series.min()) / (series.max - series.min())
+            print(result)
+
+
+    def zScore(self, plot):
+        pass
+
+    def maxScaled(self, plot):
+        pass

@@ -1,6 +1,7 @@
 import data
 import pandas as pd  # ToDo: remove this later
 import plotly.express as px  # ToDo: remove this later
+import json
 
 rawData = data.Data(filters='taxnodes:Technology|Information Technology|Artificial Intelligence|Assistive Technologies')
 
@@ -24,6 +25,10 @@ match test_type:
 
             match plot_type:
                 case '1':
+                    data = rawData.getAllTags()
+                    data = rawData.getPlotDataByDate(data, target,
+                                                     start_date=start_date, end_date=end_date)
+
                     trend_line = input('==> What type of trend line do you want? (Press ENTER for no trend line)\n'
                                        ' 1. ols\n'
                                        ' 2. lowess\n'
@@ -45,16 +50,17 @@ match test_type:
                         case _:
                             trend = None
 
-                    plot = rawData.makeScatterPlot(target, trend=trend)
+                    plot = rawData.makeScatterPlot(data, trend=trend)
 
                 case '2':
-                    plot = rawData.makeLineChart(target, start_date=start_date, end_date=end_date)
+                    plot = rawData.makeLineChart(data)
                 case _:
                     break
 
             plot.show()
+            print(plot)
 
-    case 2:  # Ploting top x values
+    case 2:  # Plotting top x values
         data = rawData.getAllTags()
         count = 10
         start_date = '01/01/2019'
@@ -64,16 +70,11 @@ match test_type:
             frac=0.1,
         )
 
-        rawData.plotTopX(data, count, 'scatter', trend_options=trend_options,
-                         start_date=start_date, end_date=end_date).show()
+        plot = rawData.plotTopX(data, count, 'scatter', trend_options=trend_options,
+                         start_date=start_date, end_date=end_date)
+        # plot.show()
 
-        # chart_data = []
-        # for target in top_x:
-        #     chart_data.append(rawData.getChartData(data, target, start_date, end_date))
-        #
-        # top_x_data = pd.concat(chart_data)
-        # plot_top_x = px.scatter(top_x_data, x='date', y='occurrences', color='target', trendline='lowess')
-        # plot_top_x.show()
+        rawData.minMaxScaled(plot)
 
     case 3:  # Plotting Radar Chart
         rawData.plotTopX(rawData.getAllTaxNodes(), 5, plot_type='radar').show()
